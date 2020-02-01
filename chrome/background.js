@@ -2,11 +2,26 @@ if (typeof browser !== 'undefined') {
   chrome = browser
 }
 
+chrome.webRequest.onBeforeSendHeaders.addListener(function (details) {
+  details.requestHeaders.forEach(detail => {
+    if (detail.name === 'User-Agent') {
+      detail.value = 'netdisk;2.2.51.6;netdisk;10.0.63;PC;android-android'
+    }
+  })
+  return { requestHeaders: details.requestHeaders }
+}, { urls: ['*://pcs.baidu.com/rest/2.0/pcs/file*'] }, ['blocking', 'requestHeaders'])
+
 const httpSend = ({ url, options }, resolve, reject) => {
   fetch(url, options).then((response) => {
     if (response.ok) {
-      response.json().then((data) => {
-        resolve(data)
+      response.text().then((data) => {
+        try {
+          const json = JSON.parse(data)
+          resolve(json)
+        }
+        catch {
+          resolve(data)
+        }
       })
     } else {
       reject(response)
@@ -40,6 +55,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       }, (err) => {
         console.log(err)
         sendResponse(false)
+      })
+      return true
+    case 'fetch':
+      httpSend(request.data, (data) => {
+        sendResponse(data)
+      }, (err) => {
+        console.log(err)
+        sendResponse(err)
       })
       return true
     case 'getCookies':
