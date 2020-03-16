@@ -110,14 +110,21 @@ class Home extends Downloader {
   async getFiles (files) {
     const prefix = this.getPrefixLength()
     const appId = Core.getConfigData('appId')
+    const svip = Core.getConfigData('svip')
     const BDUSS = Core.cookies.BDUSS
     const time = Number.parseInt(Date.now() / 1000, 10)
+
     if (BDUSS && this.uid) {
       const devuid = this.getDevUID()
       const rand = this.sign(time, devuid, this.uid, BDUSS)
       for (const key in files) {
-        const prelink = `${location.protocol}//pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload&ver=2&time=${time}&rand=${rand}&devuid=${devuid}&app_id=${appId}&path=${encodeURIComponent(files[key].path)}`
-        const links = await this.getFileLink(prelink)
+        let links = ''
+        if (svip) {
+          const prelink = `${location.protocol}//pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload&ver=2&time=${time}&rand=${rand}&devuid=${devuid}&app_id=${appId}&path=${encodeURIComponent(files[key].path)}`
+          links = await this.getFileLink(prelink)
+        } else {
+          links = `${location.protocol}//pcs.baidu.com/rest/2.0/pcs/file?method=download&app_id=${appId}&path=${encodeURIComponent(files[key].path)}`
+        }
         this.fileDownloadInfo.push({
           name: files[key].path.substr(prefix),
           link: links,
